@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ScamShield — Suspicious Message Analyzer</title>
+  <style>
+    :root { --bg:#0b1220; --panel:#131e31; --line:#2a3850; --text:#eef4ff; --muted:#aab8ce; --accent:#59d6b2; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,Segoe UI,Arial,sans-serif; background:linear-gradient(135deg,#09111e,#101d31); color:var(--text); }
+    .wrap { width:min(1000px,92%); margin:0 auto; padding:34px 0 50px; }
+    header { display:flex; align-items:center; gap:14px; margin-bottom:26px; }
+    .logo { width:52px; height:52px; border-radius:15px; display:grid; place-items:center; font-size:27px; background:#173b43; border:1px solid #28675f; }
+    h1 { margin:0; font-size:clamp(25px,4vw,36px); letter-spacing:-.7px; }
+    .sub { color:var(--muted); margin:6px 0 0; }
+    .tag { display:inline-block; margin-top:12px; color:#9debd5; border:1px solid #28675f; background:#102c30; padding:6px 10px; border-radius:99px; font-size:12px; }
+    .grid { display:grid; grid-template-columns:1.25fr .75fr; gap:18px; align-items:start; }
+    .card { background:rgba(19,30,49,.94); border:1px solid var(--line); border-radius:18px; padding:22px; box-shadow:0 12px 35px #0002; }
+    h2 { margin:0 0 10px; font-size:19px; }
+    .muted { color:var(--muted); line-height:1.5; font-size:14px; }
+    textarea { width:100%; min-height:175px; resize:vertical; margin-top:15px; padding:14px; border-radius:12px; border:1px solid #354660; background:#0a1424; color:var(--text); font:inherit; line-height:1.5; }
+    textarea:focus { outline:2px solid #59d6b2; border-color:transparent; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    button { border:0; border-radius:10px; padding:12px 16px; font-weight:700; cursor:pointer; }
+    .primary { background:var(--accent); color:#07231d; }
+    .secondary { background:#263750; color:var(--text); }
+    .risk { padding:13px 15px; border-radius:12px; margin:14px 0; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .High { background:#421f2b; border:1px solid #873c4d; color:#ffb6c0; }
+    .Medium { background:#40351d; border:1px solid #80672c; color:#ffdc8a; }
+    .Low { background:#16372f; border:1px solid #2b7861; color:#a4f2d5; }
+    .finding { border-top:1px solid var(--line); padding:13px 0; }
+    .finding strong { display:block; margin-bottom:5px; }
+    .finding p { color:var(--muted); margin:0; font-size:14px; line-height:1.5; }
+    .tips { padding-left:20px; color:var(--muted); line-height:1.6; }
+    .history { margin-top:18px; }
+    .history-item { border-top:1px solid var(--line); padding:13px 0; }
+    .history-top { display:flex; justify-content:space-between; gap:12px; align-items:center; }
+    .pill { border-radius:99px; padding:4px 8px; font-size:12px; font-weight:700; }
+    .history-msg { color:var(--muted); font-size:13px; line-height:1.5; overflow-wrap:anywhere; margin:7px 0 4px; }
+    .notice { padding:12px; background:#15382f; border:1px solid #2b7861; border-radius:10px; margin-bottom:12px; color:#b9f4df; }
+    .error { padding:12px; background:#421f2b; border:1px solid #873c4d; border-radius:10px; margin-bottom:12px; color:#ffb6c0; }
+    footer { color:#8191a9; font-size:12px; text-align:center; line-height:1.6; margin-top:22px; }
+    @media(max-width:760px) { .grid { grid-template-columns:1fr; } .wrap { padding-top:22px; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">🛡️</div>
+    <div>
+      <h1>ScamShield</h1>
+      <p class="sub">Suspicious Message Analyzer · Stay alert. Stay protected.</p>
+      <span class="tag">RULE-BASED TEXT ANALYSIS DEMO</span>
+    </div>
+  </header>
+
+  {% if result and result.notice %}<div class="notice">{{ result.notice }}</div>{% endif %}
+  <div class="grid">
+    <section class="card">
+      <h2>Analyze a message</h2>
+      <p class="muted">Paste an SMS, email, or chat message. ScamShield checks for common warning signs and explains them.</p>
+      <form method="post" action="/">
+        <textarea name="message" maxlength="5000" placeholder="Paste a suspicious message here..." required>{{ message }}</textarea>
+        <div class="actions">
+          <button class="primary" type="submit">🔎 Analyze message</button>
+          <button class="secondary" type="button" onclick="document.querySelector('textarea').value='Congratulations! You have won ₹50,000. Your bank account will be blocked in 10 minutes. Click http://example.invalid/claim and enter your OTP to claim your reward.'">Load demo message</button>
+          <button class="secondary" type="button" onclick="document.querySelector('textarea').value='Hi, our project meeting is scheduled for 10 AM tomorrow in Lab 2. Please bring your notes.'">Load normal message</button>
+        </div>
+      </form>
+      {% if result and result.error %}<div class="error" style="margin-top:14px">{{ result.error }}</div>{% endif %}
+      {% if result and result.risk %}
+        <div class="risk {{ result.risk }}">
+          <div><strong>{{ result.risk }} potential risk</strong><div style="font-size:12px;margin-top:4px">Based on matched warning signs</div></div>
+          <div><strong>Score: {{ result.score }}</strong></div>
+        </div>
+        <h2>Why it was flagged</h2>
+        {% for f in result.findings %}
+          <div class="finding"><strong>{{ f.name }}{% if f.points %} · +{{ f.points }}{% endif %}</strong><p>{{ f.explanation }}</p></div>
+        {% endfor %}
+        <h2 style="margin-top:18px">Recommended next steps</h2>
+        <ul class="tips">{% for tip in result.tips %}<li>{{ tip }}</li>{% endfor %}</ul>
+      {% endif %}
+    </section>
+
+    <aside class="card">
+      <h2>How it works</h2>
+      <p class="muted">The analyzer looks for common indicators, including:</p>
+      <div class="finding"><strong>⚠️ Urgent language</strong><p>Threats, deadlines, and pressure to act quickly.</p></div>
+      <div class="finding"><strong>🔐 Sensitive information</strong><p>Mentions of OTPs, passwords, PINs, or CVVs.</p></div>
+      <div class="finding"><strong>🎁 Prize and payment lures</strong><p>Unexpected rewards, fees, or requests for money.</p></div>
+      <div class="finding"><strong>🔗 Links and impersonation</strong><p>URLs and phrases that may imitate trusted services.</p></div>
+      <p class="muted">The score is a simple demonstration heuristic, not a probability or a verified threat-intelligence result.</p>
+    </aside>
+  </div>
+
+  <section class="card history">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+      <div><h2>Recent analysis history</h2><p class="muted" style="margin:0">Saved locally in SQLite on this computer.</p></div>
+      <form method="post" action="/clear-history" onsubmit="return confirm('Clear all saved analysis history?')"><button class="secondary" type="submit">Clear history</button></form>
+    </div>
+    {% if history %}
+      {% for item in history %}
+        <div class="history-item">
+          <div class="history-top"><strong>{{ item.created_at }}</strong><span class="pill {{ item.risk }}">{{ item.risk }} · {{ item.score }}</span></div>
+          <p class="history-msg">{{ item.message[:220] }}{% if item.message|length > 220 %}…{% endif %}</p>
+          <small class="muted">{{ item.findings }}</small>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted" style="margin-top:16px">No analyses saved yet. Analyze a message to create your first record.</p>
+    {% endif %}
+  </section>
+  <footer>Educational prototype. A low score does not mean a message is safe. Do not share real OTPs, passwords, or private information while testing.</footer>
+</div>
+</body>
+</html>
